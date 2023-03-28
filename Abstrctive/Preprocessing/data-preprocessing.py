@@ -3,13 +3,13 @@ from tqdm import tqdm
 import re
 import pandas as pd
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-import random
 from statistics import stdev,mean
+import spacy
 
 import warnings
+
 warnings.filterwarnings("ignore")
+nlp = spacy.load('en_core_web_sm')
 
 def load_article(file_name):
     file = open(file_name, encoding = 'utf-8')
@@ -23,9 +23,10 @@ def split_article_story_highlight(article):
     highlights = [h.strip() for h in highlights if len(h) > 0]
     return story, highlights
 
-def decontracted(phrase):
-    phrase = re.sub(r"won't", "will not", phrase)
+def decontracted(raw_phrase):
+    phrase = re.sub(r"won't", "will not", raw_phrase)
     phrase = re.sub(r"can\'t", "can not", phrase)
+    phrase = re.sub(r"shan\'t", "shall not", phrase)
     phrase = re.sub(r"n\'t", " not", phrase)
     phrase = re.sub(r"\'re", " are", phrase)
     phrase = re.sub(r"\'s", " is", phrase)
@@ -40,6 +41,7 @@ def decontracted(phrase):
 data_path = "/CNN/stories"
 csv_path = "/CNN/CNN_with_summary.csv"
 clean_csv_path = "/CNN/data_cleaned1.csv"
+clean_csv_ent_path = "/CNN/data_with_ents.csv"
 stories = list()
 for name in tqdm(listdir(data_path)):
     filename = data_path + '/' + name
@@ -93,3 +95,23 @@ summary_text = summary_text.reshape(-1, 1)
 data_summ = pd.DataFrame(summary_text, columns = ['Summary'])
 data_cleaned = data_article.join(data_summ)
 data_cleaned.to_csv(clean_csv_path, index = False)
+data_cleaned['Summary'] = data_cleaned['Summary'].apply(lambda x : '_START_ '+ x + ' _END_')
+max_text_len = 330
+max_summary_len = 40
+#Select the Summaries and Text between max len defined above
+cleaned_text = np.array(data_cleaned['Article'])
+cleaned_summary = np.array(data_cleaned['Summary'])
+short_text = []
+short_summary = []
+for i in range(len(cleaned_text)):
+    if(len(cleaned_summary[i].split()) <= max_summary_len and len(cleaned_text[i].split()) <= max_text_len):
+        doc1 = nlp(cleaned_text[i])
+        c = (" ".join([t.text if not t.ent_type_ else t.ent_type_ for t in doc1]))
+        c = c.lower()
+        short_text.append(c)
+        doc2 = nlp(cleaned_summary[i])
+        k = (" ".join([t.text if not t.ent_type_ else t.ent_type_ for t in doc2]))
+        k = k.lower()
+        short_summary.append(k)
+post_pre = pd.DataFrame({'text': short_text, 'summary': short_summary})
+post_pre = post_pre.to_csv(clean_csv_ent_path)
