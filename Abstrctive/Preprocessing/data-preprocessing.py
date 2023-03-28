@@ -98,7 +98,7 @@ data_cleaned.to_csv(clean_csv_path, index = False)
 data_cleaned['Summary'] = data_cleaned['Summary'].apply(lambda x : '_START_ '+ x + ' _END_')
 max_text_len = 330
 max_summary_len = 40
-#Select the Summaries and Text between max len defined above
+# Select only the summaries and article text between max length that above
 cleaned_text = np.array(data_cleaned['Article'])
 cleaned_summary = np.array(data_cleaned['Summary'])
 short_text = []
@@ -106,12 +106,12 @@ short_summary = []
 for i in range(len(cleaned_text)):
     if(len(cleaned_summary[i].split()) <= max_summary_len and len(cleaned_text[i].split()) <= max_text_len):
         doc1 = nlp(cleaned_text[i])
-        c = (" ".join([t.text if not t.ent_type_ else t.ent_type_ for t in doc1]))
-        c = c.lower()
-        short_text.append(c)
         doc2 = nlp(cleaned_summary[i])
-        k = (" ".join([t.text if not t.ent_type_ else t.ent_type_ for t in doc2]))
-        k = k.lower()
-        short_summary.append(k)
+        st = (" ".join([t.text if not t.ent_type_ else t.ent_type_ for t in doc1]))
+        ss = (" ".join([t.text if not t.ent_type_ else t.ent_type_ for t in doc2]))
+        st = st.lower()
+        ss = ss.lower()
+        short_text.append(st)
+        short_summary.append(ss)
 post_pre = pd.DataFrame({'text': short_text, 'summary': short_summary})
 post_pre = post_pre.to_csv(clean_csv_ent_path)
